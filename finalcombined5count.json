@@ -1,0 +1,100 @@
+[
+  { "id": 901, "fio": "Рахимов Рахим", "birth": "", "death": "", "partnerId": 902, "parent1Id": null, "parent2Id": null, "photo": "", "bio": "" },
+  { "id": 902, "fio": "Гуломова Мукаррам", "birth": "", "death": "", "partnerId": 901, "parent1Id": null, "parent2Id": null, "photo": "", "bio": "" },
+  { "id": 903, "fio": "Хайдаров Шариф", "birth": "", "death": "", "partnerId": 904, "parent1Id": null, "parent2Id": null, "photo": "", "bio": "" },
+  { "id": 904, "fio": "Хайдарова", "birth": "", "death": "", "partnerId": 903, "parent1Id": null, "parent2Id": null, "photo": "", "bio": "" },
+
+  { "id": 700, "fio": "Рахимов Азимжон Рахимович", "birth": "27.02.1925", "death": "17.05.1997", "partnerId": 701, "parent1Id": 901, "parent2Id": 902, "photo": "", "bio": "" },
+  { "id": 701, "fio": "Хайдарова Сайда Шарифовна", "birth": "1925", "death": "20.03.2002", "partnerId": 700, "parent1Id": 903, "parent2Id": 904, "photo": "", "bio": "" },
+
+  { "id": 301, "fio": "Аббосов Мухаммад Аббосович", "birth": "09.05.1930", "death": "29.03.2022", "partnerId": 302, "parent1Id": null, "parent2Id": null, "photo": "", "bio": "" },
+  { "id": 302, "fio": "Тойирова Захробегим Сайдхусенова", "birth": "10.11.1935", "death": "27.04.2014", "partnerId": 301, "parent1Id": null, "parent2Id": null, "photo": "", "bio": "" },
+  { "id": 305, "fio": "Аббосов Бахром Мухаммадович", "birth": "24.02.1955", "death": "07.09.2021", "partnerId": 306, "parent1Id": 301, "parent2Id": 302, "photo": "", "bio": "" },
+  { "id": 306, "fio": "Аббасова Муборак Азимовна", "birth": "18.05.1960", "death": "", "partnerId": 305, "parent1Id": 700, "parent2Id": 701, "photo": "", "bio": "" },
+
+  { "id": 702, "fio": "Рахимов Кахрамон Азимович", "birth": "01.10.1948", "death": "", "partnerId": 703, "parent1Id": 700, "parent2Id": 701, "photo": "", "bio": "" },
+  { "id": 703, "fio": "Рахимова (Казимова) Зухра Рахимовна", "birth": "26.01.1946", "death": "", "partnerId": 702, "parent1Id": null, "parent2Id": null, "photo": "", "bio": "" },
+
+  { "id": 721, "fio": "Рахимова Мохира Азимовна", "birth": "21.04.1952", "death": "", "partnerId": 722, "parent1Id": 700, "parent2Id": 701, "photo": "", "bio": "" },
+  { "id": 722, "fio": "Охунжон Сафаров Тураевич", "birth": "18.02.1942", "death": "", "partnerId": 721, "parent1Id": 723, "parent2Id": 724, "photo": "", "bio": "" },
+  { "id": 723, "fio": "Тураев Сафар", "birth": "1925", "death": "", "partnerId": 724, "parent1Id": null, "parent2Id": null, "photo": "", "bio": "" },
+  { "id": 724, "fio": "Тураева Муаззам", "birth": "1930", "death": "", "partnerId": 723, "parent1Id": null, "parent2Id": null, "photo": "", "bio": "" },
+
+  { "id": 733, "fio": "Рахимова Ноила Азимовна", "birth": "25.02.1955", "death": "", "partnerId": 734, "parent1Id": 700, "parent2Id": 701, "photo": "", "bio": "" },
+  { "id": 734, "fio": "Аллаеров Фатилло Махмудович", "birth": "05.10.1948", "death": "", "partnerId": 733, "parent1Id": 735, "parent2Id": 736, "photo": "", "bio": "" },
+  { "id": 735, "fio": "Аллаеров Махмуд", "birth": "1910", "death": "", "partnerId": 736, "parent1Id": null, "parent2Id": null, "photo": "", "bio": "" },
+  { "id": 736, "fio": "Аллаерова Маъсума", "birth": "1913", "death": "", "partnerId": 735, "parent1Id": null, "parent2Id": null, "photo": "", "bio": "" },
+
+  { "id": 907, "fio": "Рахимов Хамза Азимович", "birth": "26.05.1957", "death": "", "partnerId": 908, "parent1Id": 700, "parent2Id": 701, "photo": "", "bio": "" },
+  { "id": 908, "fio": "Тагирова Саида Нажотовна", "birth": "19.10.1962", "death": "", "partnerId": 907, "parent1Id": 909, "parent2Id": 910, "photo": "", "bio": "" },
+  { "id": 909, "fio": "Тагиров Нажот", "birth": "1938", "death": "", "partnerId": 910, "parent1Id": null, "parent2Id": null, "photo": "", "bio": "" },
+  { "id": 910, "fio": "Тагирова Мутар", "birth": "1941", "death": "", "partnerId": 909, "parent1Id": null, "parent2Id": null, "photo": "", "bio": "" },
+
+  { "id": 307, "fio": "Аббасова Нигина Бахроновна", "birth": "16.04.1979", "death": "", "partnerId": 308, "parent1Id": 305, "parent2Id": 306, "photo": "", "bio": "" },
+  { "id": 308, "fio": "Хаятов Закир Очилович", "birth": "11.11.1969", "death": "", "partnerId": 307, "parent1Id": null, "parent2Id": null, "photo": "", "bio": "" },
+  { "id": 309, "fio": "Закиров Азизбек Закирович", "birth": "11.11.2014", "death": "", "partnerId": null, "parent1Id": 308, "parent2Id": 307, "photo": "", "bio": "" },
+  { "id": 310, "fio": "Хамидов Камол Абдукаримович", "birth": "08.12.2005", "death": "", "partnerId": null, "parent1Id": 308, "parent2Id": 307, "photo": "", "bio": "" },
+  { "id": 311, "fio": "Аббосов Жавохир Бахронович", "birth": "02.11.1983", "death": "", "partnerId": 312, "parent1Id": 305, "parent2Id": 306, "photo": "", "bio": "" },
+  { "id": 312, "fio": "Халимова Нозима Боймуродовна", "birth": "21.01.1983", "death": "", "partnerId": 311, "parent1Id": null, "parent2Id": null, "photo": "", "bio": "" },
+  { "id": 313, "fio": "Бахронова Мулкижахон Жавохировна", "birth": "31.10.2007", "death": "", "partnerId": null, "parent1Id": 311, "parent2Id": 312, "photo": "", "bio": "" },
+  { "id": 314, "fio": "Бахронова Саида Жавохировна", "birth": "07.06.2009", "death": "", "partnerId": null, "parent1Id": 311, "parent2Id": 312, "photo": "", "bio": "" },
+  { "id": 315, "fio": "Бахронов Шохижахон Жавохирович", "birth": "21.07.2011", "death": "", "partnerId": null, "parent1Id": 311, "parent2Id": 312, "photo": "", "bio": "" },
+  { "id": 316, "fio": "Аббосова Хурижахон Жавохировна", "birth": "03.02.2021", "death": "", "partnerId": null, "parent1Id": 311, "parent2Id": 312, "photo": "", "bio": "" },
+
+  { "id": 704, "fio": "Рахимов Баходир Кахрамонович", "birth": "26.11.1971", "death": "", "partnerId": 705, "parent1Id": 702, "parent2Id": 703, "photo": "", "bio": "" },
+  { "id": 705, "fio": "Раджабова Нигина Саидовна", "birth": "24.08.1974", "death": "", "partnerId": 704, "parent1Id": null, "parent2Id": null, "photo": "", "bio": "" },
+  { "id": 706, "fio": "Рахимов Мироншох Баходирович", "birth": "30.06.1996", "death": "", "partnerId": 707, "parent1Id": 704, "parent2Id": 705, "photo": "", "bio": "" },
+  { "id": 707, "fio": "Абдуллаева Ситорабону Равшановна", "birth": "14.06.1997", "death": "", "partnerId": 706, "parent1Id": null, "parent2Id": null, "photo": "", "bio": "" },
+  { "id": 708, "fio": "Рахимов Джавоншер Баходирович", "birth": "06.08.2001", "death": "", "partnerId": null, "parent1Id": 704, "parent2Id": 705, "photo": "", "bio": "" },
+  { "id": 709, "fio": "Рахимова Сумаябону Мироншоховна", "birth": "07.03.2025", "death": "", "partnerId": null, "parent1Id": 706, "parent2Id": 707, "photo": "", "bio": "" },
+
+  { "id": 710, "fio": "Рахимова Нодира Кахрамоновна", "birth": "26.11.1971", "death": "", "partnerId": 711, "parent1Id": 702, "parent2Id": 703, "photo": "", "bio": "" },
+  { "id": 711, "fio": "Саидов Сохиб Самадович", "birth": "22.04.1970", "death": "", "partnerId": 710, "parent1Id": null, "parent2Id": null, "photo": "", "bio": "" },
+  { "id": 712, "fio": "Саидов Дилмурод Сохибович", "birth": "01.01.2001", "death": "", "partnerId": 713, "parent1Id": 710, "parent2Id": 711, "photo": "", "bio": "" },
+  { "id": 713, "fio": "Салимова Дурдона Кахрамоновна", "birth": "24.12.2000", "death": "", "partnerId": 712, "parent1Id": null, "parent2Id": null, "photo": "", "bio": "" },
+  { "id": 714, "fio": "Саидова Афруза Дилмуродовна", "birth": "28.11.2023", "death": "", "partnerId": null, "parent1Id": 712, "parent2Id": 713, "photo": "", "bio": "" },
+  { "id": 715, "fio": "Саидов Наимжон Дилмуродович", "birth": "25.03.2025", "death": "", "partnerId": null, "parent1Id": 712, "parent2Id": 713, "photo": "", "bio": "" },
+
+  { "id": 716, "fio": "Рахимов Джахонгир Кахрамонович", "birth": "22.06.1977", "death": "", "partnerId": 717, "parent1Id": 702, "parent2Id": 703, "photo": "", "bio": "" },
+  { "id": 717, "fio": "Ахмедова Наргиза Махмудовна", "birth": "06.02.1980", "death": "", "partnerId": 716, "parent1Id": null, "parent2Id": null, "photo": "", "bio": "" },
+  { "id": 718, "fio": "Рахимов Амиршох Джахонгирович", "birth": "17.08.2002", "death": "", "partnerId": null, "parent1Id": 716, "parent2Id": 717, "photo": "", "bio": "" },
+  { "id": 719, "fio": "Рахимов Азимжон Джахонгирович", "birth": "24.08.2006", "death": "", "partnerId": null, "parent1Id": 716, "parent2Id": 717, "photo": "", "bio": "" },
+  { "id": 720, "fio": "Рахимова Мунисахон Джахонгировна", "birth": "26.11.2011", "death": "", "partnerId": null, "parent1Id": 716, "parent2Id": 717, "photo": "", "bio": "" },
+
+  { "id": 725, "fio": "Сафарова Нигора Охунжоновна", "birth": "07.07.1974", "death": "", "partnerId": 726, "parent1Id": 722, "parent2Id": 721, "photo": "", "bio": "" },
+  { "id": 726, "fio": "Ачилов Икромжон Исматуллаевич", "birth": "04.02.1974", "death": "", "partnerId": 725, "parent1Id": null, "parent2Id": null, "photo": "", "bio": "" },
+  { "id": 729, "fio": "Исматуллаев Миразиз Икромжонович", "birth": "09.07.1999", "death": "", "partnerId": null, "parent1Id": 726, "parent2Id": 725, "photo": "", "bio": "" },
+  { "id": 730, "fio": "Исматуллаева Мехрангиз Икромжоновна", "birth": "08.06.2003", "death": "", "partnerId": null, "parent1Id": 726, "parent2Id": 725, "photo": "", "bio": "" },
+
+  { "id": 727, "fio": "Сафаров Окилжон Охунжонович", "birth": "24.02.1981", "death": "", "partnerId": 728, "parent1Id": 722, "parent2Id": 721, "photo": "", "bio": "" },
+  { "id": 728, "fio": "Бобилова Дилрабо Зокировна", "birth": "26.12.1980", "death": "", "partnerId": 727, "parent1Id": null, "parent2Id": null, "photo": "", "bio": "" },
+  { "id": 731, "fio": "Охунжонова Самира Окилжоновна", "birth": "31.01.2014", "death": "", "partnerId": null, "parent1Id": 727, "parent2Id": 728, "photo": "", "bio": "" },
+  { "id": 732, "fio": "Охунжонов Абдулазиз Окилжонович", "birth": "19.07.2019", "death": "", "partnerId": null, "parent1Id": 727, "parent2Id": 728, "photo": "", "bio": "" },
+
+  { "id": 737, "fio": "Аллаеров Умед Фатиллоевич", "birth": "23.02.1991", "death": "", "partnerId": 738, "parent1Id": 734, "parent2Id": 733, "photo": "", "bio": "" },
+  { "id": 738, "fio": "Латифова Дилноза Ражабалиевна", "birth": "31.03.1995", "death": "", "partnerId": 737, "parent1Id": null, "parent2Id": null, "photo": "", "bio": "" },
+  { "id": 741, "fio": "Аллаерова Дилнура Умедовна", "birth": "18.08.2014", "death": "", "partnerId": null, "parent1Id": 737, "parent2Id": 738, "photo": "", "bio": "" },
+  { "id": 742, "fio": "Аллаерова Амира Умедовна", "birth": "01.03.2020", "death": "", "partnerId": null, "parent1Id": 737, "parent2Id": 738, "photo": "", "bio": "" },
+  { "id": 743, "fio": "Аллаеров Мухаммадясин Умедович", "birth": "14.05.2026", "death": "", "partnerId": null, "parent1Id": 737, "parent2Id": 738, "photo": "", "bio": "" },
+  { "id": 744, "fio": "Аллаерова Садия Умедовна", "birth": "14.05.2026", "death": "", "partnerId": null, "parent1Id": 737, "parent2Id": 738, "photo": "", "bio": "" },
+  { "id": 745, "fio": "Аллаерова Сумая Умедовна", "birth": "14.05.2026", "death": "", "partnerId": null, "parent1Id": 737, "parent2Id": 738, "photo": "", "bio": "" },
+
+  { "id": 739, "fio": "Аллаеров Нозима Фатиллоевна", "birth": "23.09.1982", "death": "", "partnerId": 740, "parent1Id": 734, "parent2Id": 733, "photo": "", "bio": "" },
+  { "id": 740, "fio": "Муродов Уткир Уктамович", "birth": "04.08.1982", "death": "", "partnerId": 739, "parent1Id": null, "parent2Id": null, "photo": "", "bio": "" },
+  { "id": 746, "fio": "Муродов Шахзод Уткирович", "birth": "21.07.2003", "death": "", "partnerId": null, "parent1Id": 740, "parent2Id": 739, "photo": "", "bio": "" },
+  { "id": 747, "fio": "Муродова Шахриза Уткировна", "birth": "04.12.2007", "death": "", "partnerId": null, "parent1Id": 740, "parent2Id": 739, "photo": "", "bio": "" },
+
+  { "id": 911, "fio": "Рахимова Тахмина Хамзаевна", "birth": "02.09.1991", "death": "", "partnerId": 912, "parent1Id": 907, "parent2Id": 908, "photo": "", "bio": "" },
+  { "id": 912, "fio": "Худойбердиев Темир", "birth": "22.12.1988", "death": "", "partnerId": 911, "parent1Id": 916, "parent2Id": 917, "photo": "", "bio": "" },
+  { "id": 916, "fio": "Худойбердиев Тохир", "birth": "17.09.1951", "death": "", "partnerId": 917, "parent1Id": null, "parent2Id": null, "photo": "", "bio": "" },
+  { "id": 917, "fio": "Худойбердиева Мукаррам", "birth": "06.07.1961", "death": "", "partnerId": 916, "parent1Id": null, "parent2Id": null, "photo": "", "bio": "" },
+  { "id": 913, "fio": "Тохирова Аффруза", "birth": "21.01.2019", "death": "", "partnerId": null, "parent1Id": 911, "parent2Id": 912, "photo": "", "bio": "" },
+  { "id": 914, "fio": "Тохирова Эъзоза", "birth": "08.04.2020", "death": "", "partnerId": null, "parent1Id": 911, "parent2Id": 912, "photo": "", "bio": "" },
+  { "id": 915, "fio": "Тохирова Саида", "birth": "22.12.2025", "death": "", "partnerId": null, "parent1Id": 911, "parent2Id": 912, "photo": "", "bio": "" },
+
+  { "id": 918, "fio": "Рахимова Парвина Хамзаевна", "birth": "14.08.1995", "death": "", "partnerId": 919, "parent1Id": 907, "parent2Id": 908, "photo": "", "bio": "" },
+  { "id": 919, "fio": "Хамидов Фирдавс Обидович", "birth": "09.04.1988", "death": "", "partnerId": 918, "parent1Id": 920, "parent2Id": 921, "photo": "", "bio": "" },
+  { "id": 920, "fio": "Саматов Обид", "birth": "29.08.1962", "death": "", "partnerId": 921, "parent1Id": null, "parent2Id": null, "photo": "", "bio": "" },
+  { "id": 921, "fio": "Хожиева Шоира", "birth": "03.06.1963", "death": "", "partnerId": 920, "parent1Id": null, "parent2Id": null, "photo": "", "bio": "" },
+  { "id": 922, "fio": "Шухратова Имона", "birth": "05.07.2017", "death": "", "partnerId": null, "parent1Id": 918, "parent2Id": 919, "photo": "", "bio": "" }
+]

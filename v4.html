@@ -1,0 +1,1181 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Семейное древо</title>
+<script src="d3.v7.min.js"></script>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; font-family: Arial, sans-serif; }
+
+  #stage {
+    position: relative; width: 100%; height: 100vh; overflow: hidden;
+    background-color: #f2f6ec;
+    background-image: radial-gradient(circle, #cfe0bd 1.5px, transparent 1.5px);
+    background-size: 26px 26px;
+    cursor: grab;
+  }
+  #stage:active { cursor: grabbing; }
+
+  #world { position: absolute; top: 0; left: 0; transform-origin: 0 0; }
+  #links { position: absolute; top: 0; left: 0; overflow: visible; pointer-events: none; }
+  .branch {
+    fill: none; stroke: #4a2f18; stroke-width: 7; stroke-linecap: round;
+    transition: stroke .15s ease, stroke-width .15s ease, filter .15s ease;
+  }
+  .branch-reconnect { stroke-dasharray: 3 11; opacity: .85; }
+  .branch-highlight {
+    stroke: #c9a35c; stroke-width: 10;
+    filter: drop-shadow(0 0 5px rgba(201,163,92,.85));
+  }
+  .leaf { fill: #6f8f4f; opacity: .9; }
+
+  #nodes { position: absolute; top: 0; left: 0; }
+  .node { position: absolute; top: 0; left: 0; display: flex; justify-content: center; }
+
+  .tree-card {
+    display: flex;
+    background: linear-gradient(180deg, #fffdf6 0%, #fbf3dd 100%);
+    border: 2px solid #c9a35c; border-radius: 12px;
+    box-shadow: 0 3px 8px rgba(90, 70, 20, .15);
+    overflow: hidden;
+  }
+  .tree-card.solo { width: 190px; }
+  .tree-card.couple { width: 340px; }
+  .couple-divider { width: 2px; background: #c9a35c; opacity: .5; }
+
+  .person-block {
+    flex: 1; display: flex; flex-direction: column; align-items: center;
+    gap: 3px; padding: 9px 8px; cursor: pointer; text-align: center;
+    transition: background .1s;
+  }
+  .person-block:hover { background: rgba(201,163,92,.12); }
+  .person-block.marquee-selected {
+    background: rgba(179,84,63,.18);
+    outline: 2px solid #b3543f;
+    outline-offset: -2px;
+  }
+
+  .avatar {
+    width: 34px; height: 34px; border-radius: 50%;
+    background: #7a8f5c; color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: bold; font-size: .75em; flex-shrink: 0; overflow: hidden;
+  }
+  .avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+  .placeholder-block { opacity: .6; }
+  .placeholder-avatar {
+    background: transparent !important;
+    border: 2px dashed #8a7a54; color: #8a7a54; font-size: 1.1em;
+  }
+  .placeholder-block .years { color: #8a7a54; font-style: italic; }
+
+  .name { font-family: Georgia, serif; font-weight: bold; color: #4a3c1d; font-size: .78em; line-height: 1.15; }
+  .years { color: #8a7a54; font-size: .68em; margin-top: 1px; }
+
+  .page-title {
+    position: fixed; top: 16px; left: 16px;
+    background: linear-gradient(180deg, #fffdf6, #fbf3dd);
+    border: 2px solid #c9a35c; color: #4a3c1d;
+    padding: 8px 18px; border-radius: 10px;
+    box-shadow: 0 2px 6px rgba(90,70,20,.15);
+    font-family: Georgia, serif; font-size: 1.05em; font-weight: bold; margin: 0; z-index: 5;
+  }
+
+  .toolbar { position: fixed; top: 16px; right: 16px; z-index: 5; display: flex; gap: 8px; }
+  .toolbar-btn {
+    border: 2px solid #c9a35c; border-radius: 8px; padding: 10px 14px;
+    background: #fffdf6; color: #4a3c1d; cursor: pointer; font-size: .9em;
+    box-shadow: 0 1px 4px rgba(0,0,0,.12);
+  }
+  .toolbar-btn:hover { background: #f3e6c8; }
+  .toolbar-btn.active { background: #b3543f; color: #fff; border-color: #b3543f; }
+
+  .zoom-toolbar { position: fixed; bottom: 20px; right: 20px; display: flex; flex-direction: column; gap: 8px; z-index: 5; }
+  .zoom-toolbar button {
+    width: 40px; height: 40px; border-radius: 50%;
+    border: 2px solid #c9a35c; background: #fffdf6; color: #4a3c1d;
+    box-shadow: 0 1px 4px rgba(0,0,0,.12); font-size: 1.1em; cursor: pointer;
+  }
+  .zoom-toolbar button:hover { background: #fbf3dd; }
+
+  .toast {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    background: #4a3c1d; color: #fffdf6; padding: 10px 18px; border-radius: 8px;
+    font-size: .9em; opacity: 0; transition: opacity .3s; pointer-events: none; z-index: 30;
+  }
+  .toast.show { opacity: 1; }
+
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(40,30,10,.45);
+    z-index: 40; align-items: center; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal-box {
+    position: relative; background: #fffdf6; border: 2px solid #c9a35c; border-radius: 14px;
+    padding: 28px; width: 420px; max-width: 92vw; max-height: 86vh; overflow-y: auto;
+    box-shadow: 0 10px 32px rgba(0,0,0,.25); font-family: Arial, sans-serif;
+  }
+  .modal-close {
+    position: absolute; top: 12px; right: 14px;
+    border: none; background: none; font-size: 1.4em; cursor: pointer; color: #8a7a54;
+  }
+  #modal-title { margin: 0 0 16px; color: #4a3c1d; font-family: Georgia, serif; }
+  .modal-box label { display: block; font-size: .85em; color: #6b5a34; margin-bottom: 12px; }
+  .modal-box input, .modal-box textarea, .modal-box select {
+    width: 100%; margin-top: 4px; padding: 8px 10px; border: 1px solid #d8c79a; border-radius: 6px;
+    font-family: inherit; font-size: .95em;
+  }
+  .modal-actions { display: flex; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
+  .btn-primary, .btn-secondary, .btn-danger, .btn-outline {
+    border: none; border-radius: 7px; padding: 9px 14px; cursor: pointer; font-size: .88em;
+  }
+  .btn-primary { background: #4a3c1d; color: #fffdf6; }
+  .btn-primary:hover { background: #3a2f16; }
+  .btn-secondary { background: #eee3c8; color: #4a3c1d; }
+  .btn-secondary:hover { background: #e2d5b0; }
+  .btn-danger { background: #b3543f; color: #fff; }
+  .btn-danger:hover { background: #9a4534; }
+  .btn-danger:disabled { opacity: .5; cursor: default; }
+  .btn-outline { background: #fffdf6; border: 2px solid #c9a35c; color: #4a3c1d; }
+  .btn-outline:hover { background: #f3e6c8; }
+  .btn-outline.small { padding: 5px 10px; font-size: .82em; }
+
+  .modal-relatives { margin-top: 18px; border-top: 1px solid #e6d9b5; padding-top: 14px; }
+  .modal-relatives-title { font-size: .8em; color: #8a7a54; margin-bottom: 6px; }
+  .relative-row {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 8px; padding: 6px 0; font-size: .88em; color: #4a3c1d;
+  }
+  .relative-picker {
+    display: flex; gap: 6px; padding: 6px 0; flex-wrap: wrap;
+  }
+  .relative-picker select { flex: 1; min-width: 140px; margin: 0; }
+
+  .marquee-box {
+    display: none;
+    position: fixed;
+    border: 2px dashed #4a3c1d;
+    background: rgba(201,163,92,.18);
+    pointer-events: none;
+    z-index: 50;
+  }
+  .marquee-box.active { display: block; }
+
+  .selection-bar {
+    display: none;
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    background: #fffdf6; border: 2px solid #b3543f; border-radius: 10px;
+    padding: 10px 16px; align-items: center; gap: 12px;
+    box-shadow: 0 4px 14px rgba(0,0,0,.2); z-index: 25; font-size: .9em; color: #4a3c1d;
+  }
+  .selection-bar.open { display: flex; }
+</style>
+</head>
+<body>
+
+<h1 class="page-title">🌳 Семейное древо</h1>
+
+<div id="stage">
+  <div id="world">
+    <svg id="links"><g id="branch-group"></g><g id="leaf-group"></g></svg>
+    <div id="nodes"></div>
+  </div>
+</div>
+
+<div class="toolbar">
+  <button id="selection-toggle-btn" class="toolbar-btn">🗑 Выделить и удалить</button>
+  <button id="add-root-btn" class="toolbar-btn">+ Новый человек</button>
+  <button id="export-btn" class="toolbar-btn">⬇ Экспорт</button>
+  <button id="import-btn" class="toolbar-btn">⬆ Импорт (добавить)</button>
+  <input type="file" id="import-file" accept="application/json" style="display:none;">
+</div>
+
+<div class="zoom-toolbar">
+  <button id="zoom-in" title="Приблизить">+</button>
+  <button id="zoom-out" title="Отдалить">−</button>
+  <button id="zoom-fit" title="Показать всё">⤢</button>
+</div>
+
+<div id="toast" class="toast"></div>
+<div id="marquee-box" class="marquee-box"></div>
+
+<div id="selection-bar" class="selection-bar">
+  <span id="selection-count">Выбрано: 0</span>
+  <button id="selection-delete-btn" class="btn-danger">🗑 Удалить</button>
+  <button id="selection-clear-btn" class="btn-outline small">Очистить</button>
+  <button id="selection-exit-btn" class="btn-secondary">✕ Готово</button>
+</div>
+
+<div id="modal-overlay" class="modal-overlay">
+  <div class="modal-box">
+    <button id="modal-close" class="modal-close">×</button>
+    <h2 id="modal-title">Человек</h2>
+    <label>ФИО<input type="text" id="m-fio"></label>
+    <label>Год рождения<input type="text" id="m-birth"></label>
+    <label>Год смерти (пусто = жив(а))<input type="text" id="m-death"></label>
+    <label>Фото (ссылка или путь к файлу)<input type="text" id="m-photo"></label>
+    <label>Биография<textarea id="m-bio" rows="4"></textarea></label>
+    <div class="modal-actions">
+      <button id="modal-save" class="btn-primary">Сохранить</button>
+      <button id="modal-delete" class="btn-danger">Удалить</button>
+      <button id="modal-cancel" class="btn-secondary">Отмена</button>
+    </div>
+    <div id="modal-relatives" class="modal-relatives">
+      <div class="modal-relatives-title">Родители</div>
+      <div id="parent-rows"></div>
+      <div class="modal-relatives-title" style="margin-top:12px;">Супруг(а)</div>
+      <div id="spouse-row"></div>
+      <div class="modal-relatives-title" style="margin-top:12px;">Дети</div>
+      <div id="child-picker" class="relative-picker"></div>
+      <button id="add-child-btn" class="btn-outline small">+ Новый ребёнок</button>
+    </div>
+  </div>
+</div>
+
+<script>
+if (typeof d3 === 'undefined') {
+  document.body.insertAdjacentHTML('afterbegin',
+    '<div style="position:fixed;top:60px;left:16px;background:#fee;color:#900;padding:10px 16px;border-radius:8px;z-index:20;">Не загрузился d3.v7.min.js — проверь, что файл лежит рядом с html.</div>');
+  throw new Error('D3 not loaded');
+}
+
+const STORAGE_KEY = 'familyTreeData';
+
+const defaultPeople = [
+  { id: 1, fio: "Иванов Пётр Сергеевич", birth: "1920", death: "1995", partnerId: 2, parent1Id: null, parent2Id: null, photo: "", bio: "Пример биографии. Замени на реальный текст." },
+  { id: 2, fio: "Иванова Анна Дмитриевна", birth: "1922", death: "2001", partnerId: 1, parent1Id: null, parent2Id: null, photo: "", bio: "" },
+  { id: 3, fio: "Иванов Сергей Петрович", birth: "1948", death: "", partnerId: null, parent1Id: 1, parent2Id: 2, photo: "", bio: "" },
+  { id: 4, fio: "Иванова Мария Петровна", birth: "1950", death: "2020", partnerId: null, parent1Id: 1, parent2Id: 2, photo: "", bio: "" },
+  { id: 5, fio: "Иванов Алексей Сергеевич", birth: "1975", death: "", partnerId: null, parent1Id: 3, parent2Id: null, photo: "", bio: "" }
+];
+
+function loadPeople() {
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if (saved) {
+    try { return JSON.parse(saved); }
+    catch (e) { console.warn('Сохранённые данные повреждены, использую пример'); }
+  }
+  return JSON.parse(JSON.stringify(defaultPeople));
+}
+function savePeople() { localStorage.setItem(STORAGE_KEY, JSON.stringify(people)); }
+
+let people = loadPeople();
+
+function getInitials(fio) {
+  return fio.split(' ').filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase();
+}
+function formatYears(person) {
+  if (person.death) return `${person.birth}–${person.death}`;
+  if (person.birth) return `${person.birth} г.р.`;
+  return '';
+}
+
+const COUPLE_SLOT = 350, SOLO_SLOT = 200;
+const CARD_H = 90, GAP_X = 28, GAP_Y = 70;
+const ROW_STEP = CARD_H + GAP_Y;
+const svgNS = 'http://www.w3.org/2000/svg';
+
+function normalizeCouples() {
+  people.forEach(p => {
+    if (p.parent1Id && p.parent2Id) {
+      const a = people.find(x => x.id === p.parent1Id);
+      const b = people.find(x => x.id === p.parent2Id);
+      if (a && b && a.partnerId !== b.id) { a.partnerId = b.id; b.partnerId = a.id; }
+    }
+  });
+}
+
+function buildUnits(list) {
+  const consumed = new Set();
+  const personToUnit = new Map();
+  const units = [];
+
+  list.forEach(p => {
+    if (consumed.has(p.id)) return;
+    const members = [p];
+    if (p.partnerId && list.some(q => q.id === p.partnerId) && !consumed.has(p.partnerId)) {
+      members.push(list.find(q => q.id === p.partnerId));
+      consumed.add(p.partnerId);
+    }
+    consumed.add(p.id);
+    const unitId = 'u' + members.map(m => m.id).sort((a, b) => a - b).join('_');
+    members.forEach(m => personToUnit.set(m.id, unitId));
+    units.push({ unitId, members });
+  });
+
+  units.forEach(u => {
+    u.parentUnitId = null;
+    u.mainMemberIndex = null;
+    u.inlaws = [];
+    u.members.forEach((m, idx) => {
+      const pid = m.parent1Id || m.parent2Id;
+      if (!pid || !personToUnit.has(pid)) return;
+      const pUnitId = personToUnit.get(pid);
+      if (u.parentUnitId === null) { u.parentUnitId = pUnitId; u.mainMemberIndex = idx; }
+      else if (pUnitId !== u.parentUnitId) u.inlaws.push({ memberIndex: idx, parentUnitId: pUnitId });
+    });
+  });
+
+  return units;
+}
+
+function makeDivider() {
+  const d = document.createElement('div');
+  d.className = 'couple-divider';
+  return d;
+}
+
+function highlightParentLinks(personId, on) {
+  document.querySelectorAll('.branch').forEach(path => {
+    const forIds = (path.dataset.for || '').split(',').filter(Boolean).map(Number);
+    if (forIds.includes(personId)) path.classList.toggle('branch-highlight', on);
+  });
+}
+
+function renderPersonBlock(person) {
+  const block = document.createElement('div');
+  block.className = 'person-block';
+  block.dataset.personId = person.id;
+  const avatar = document.createElement('div');
+  avatar.className = 'avatar';
+  avatar.innerHTML = person.photo ? `<img src="${person.photo}" alt="">` : getInitials(person.fio);
+  const info = document.createElement('div');
+  info.innerHTML = `<div class="name">${person.fio}</div><div class="years">${formatYears(person)}</div>`;
+  block.appendChild(avatar);
+  block.appendChild(info);
+  block.addEventListener('click', (e) => {
+    if (selectionMode) { e.stopPropagation(); toggleSelectPerson(person.id); return; }
+    openEditModal(person.id);
+  });
+  block.addEventListener('mouseenter', () => highlightParentLinks(person.id, true));
+  block.addEventListener('mouseleave', () => highlightParentLinks(person.id, false));
+  return block;
+}
+
+function renderPlaceholderBlock(knownPersonId) {
+  const block = document.createElement('div');
+  block.className = 'person-block placeholder-block';
+  block.innerHTML = `<div class="avatar placeholder-avatar">+</div><div class="years">Добавить супруга(у)</div>`;
+  block.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (selectionMode) return;
+    openEditModal(knownPersonId);
+  });
+  return block;
+}
+
+function memberCenterX(node) {
+  return node.data.members.length === 2 ? [node.x - 85, node.x + 85] : [node.x];
+}
+
+function effectiveTargetX(l) {
+  if (l.target.data.members.length === 2 && l.target.data.mainMemberIndex !== null) {
+    return memberCenterX(l.target)[l.target.data.mainMemberIndex];
+  }
+  return l.target.x;
+}
+
+// ТОЧНЫЙ расчёт кривой Безье, которую рисует d3.linkVertical(), вместо
+// приближения "по прямой" — раньше именно расхождение между этим
+// приближением и реальной нарисованной кривой давало пересечения
+function bezierYAtU(u, sy, ty) {
+  const midY = (sy + ty) / 2;
+  const mu = 1 - u;
+  return mu * mu * mu * sy + 3 * mu * mu * u * midY + 3 * mu * u * u * midY + u * u * u * ty;
+}
+function findUForY(sy, ty, y) {
+  if (ty === sy) return 0;
+  let lo = 0, hi = 1;
+  for (let i = 0; i < 30; i++) {
+    const mid = (lo + hi) / 2;
+    if (bezierYAtU(mid, sy, ty) < y) lo = mid; else hi = mid;
+  }
+  return (lo + hi) / 2;
+}
+function smoothstep(u) { return u * u * (3 - 2 * u); }
+function bezierXAtY(sx, sy, tx, ty, y) {
+  const u = findUForY(sy, ty, y);
+  return sx + (tx - sx) * smoothstep(u);
+}
+
+function slotWidthOf(unit, hasKids) {
+  const isCoupleLike = unit.members.length === 2 || (unit.members.length === 1 && hasKids);
+  return isCoupleLike ? COUPLE_SLOT : SOLO_SLOT;
+}
+
+function resolvePosition(anchorX, occupied, width) {
+  function collidesAt(x) {
+    return occupied.find(([lo, hi]) => (x - width / 2) < hi + GAP_X && (x + width / 2) > lo - GAP_X);
+  }
+  let xRight = anchorX, guardR = 0;
+  while (true) {
+    const c = collidesAt(xRight);
+    if (!c || guardR++ > 50) break;
+    xRight = c[1] + GAP_X + width / 2;
+  }
+  let xLeft = anchorX, guardL = 0;
+  while (true) {
+    const c = collidesAt(xLeft);
+    if (!c || guardL++ > 50) break;
+    xLeft = c[0] - GAP_X - width / 2;
+  }
+  return Math.abs(xLeft - anchorX) <= Math.abs(xRight - anchorX) ? xLeft : xRight;
+}
+
+function computeExtent(node) {
+  if (!node.children || !node.children.length) {
+    node.extentWidth = node.data.layoutWidth;
+    return node.extentWidth;
+  }
+  let childrenTotal = 0;
+  node.children.forEach((c, i) => {
+    childrenTotal += computeExtent(c);
+    if (i > 0) childrenTotal += GAP_X;
+  });
+  node._childrenTotal = childrenTotal;
+  node.extentWidth = Math.max(node.data.layoutWidth, childrenTotal);
+  return node.extentWidth;
+}
+function assignX(node, left) {
+  node.left = left;
+  if (node.children && node.children.length) {
+    let cursor = left + (node.extentWidth - node._childrenTotal) / 2;
+    node.children.forEach(c => {
+      assignX(c, cursor);
+      cursor += c.extentWidth + GAP_X;
+    });
+  }
+  node.x = left + node.extentWidth / 2;
+}
+
+function topoSortForests(n, edges) {
+  const indeg = new Array(n).fill(0);
+  const adj = Array.from({ length: n }, () => []);
+  edges.forEach(([a, b]) => { adj[a].push(b); indeg[b]++; });
+  const queue = [];
+  for (let i = 0; i < n; i++) if (indeg[i] === 0) queue.push(i);
+  const order = [];
+  while (queue.length) {
+    queue.sort((a, b) => a - b);
+    const cur = queue.shift();
+    order.push(cur);
+    adj[cur].forEach(nb => { if (--indeg[nb] === 0) queue.push(nb); });
+  }
+  for (let i = 0; i < n; i++) if (!order.includes(i)) order.push(i);
+  return order;
+}
+
+let currentNodes = [];
+let currentSatellites = [];
+
+function renderTree() {
+  normalizeCouples();
+  document.getElementById('nodes').innerHTML = '';
+  document.getElementById('branch-group').innerHTML = '';
+  document.getElementById('leaf-group').innerHTML = '';
+
+  const allUnits = buildUnits(people);
+
+  const primaryTargets = new Set(allUnits.map(u => u.parentUnitId).filter(Boolean));
+  const earlyInlawMap = new Map();
+  allUnits.forEach(u => { u.inlaws.forEach(il => earlyInlawMap.set(il.parentUnitId, true)); });
+  const satelliteUnits = allUnits.filter(u => earlyInlawMap.has(u.unitId) && !primaryTargets.has(u.unitId));
+  const mainUnits = allUnits.filter(u => !satelliteUnits.includes(u));
+
+  const unitMap = new Map(mainUnits.map(u => [u.unitId, { ...u, children: [] }]));
+  const forestRoots = [];
+  unitMap.forEach(u => {
+    if (u.parentUnitId && unitMap.has(u.parentUnitId)) unitMap.get(u.parentUnitId).children.push(u);
+    else forestRoots.push(u);
+  });
+
+  const forestOfUnit = new Map();
+  forestRoots.forEach((rootU, idx) => {
+    (function walk(u) { forestOfUnit.set(u.unitId, idx); u.children.forEach(walk); })(rootU);
+  });
+
+  const edges = [];
+  mainUnits.forEach(u => {
+    u.inlaws.forEach(il => {
+      if (!primaryTargets.has(il.parentUnitId)) return;
+      const targetForest = forestOfUnit.get(il.parentUnitId);
+      const hostForest = forestOfUnit.get(u.unitId);
+      if (targetForest !== undefined && hostForest !== undefined && targetForest !== hostForest) {
+        edges.push([targetForest, hostForest]);
+      }
+    });
+  });
+  const forestOrder = topoSortForests(forestRoots.length, edges);
+
+  currentNodes = [];
+  currentSatellites = [];
+
+  const branchGroup = document.getElementById('branch-group');
+  const leafGroup = document.getElementById('leaf-group');
+  const nodesLayer = document.getElementById('nodes');
+  const linkGen = d3.linkVertical().x(d => d.x).y(d => d.y);
+
+  let leafCounter = 0;
+  function addLeaf(mx, my) {
+    const angle = ((leafCounter * 41) % 60) - 30;
+    leafCounter++;
+    const leaf = document.createElementNS(svgNS, 'path');
+    leaf.setAttribute('class', 'leaf');
+    leaf.setAttribute('d', 'M0,0 C 6,-9 17,-9 21,0 C 17,9 6,9 0,0 Z');
+    leaf.setAttribute('transform', `translate(${mx},${my}) rotate(${angle})`);
+    leafGroup.appendChild(leaf);
+  }
+
+  function findAnyNode(unitId) {
+    return currentNodes.find(n => n.data.unitId === unitId);
+  }
+
+  function drawCard(node) {
+    const unit = node.data;
+    const hasKids = !!(node.children && node.children.length);
+    const showPlaceholder = unit.members.length === 1 && hasKids;
+    const width = slotWidthOf(unit, hasKids);
+
+    const wrap = document.createElement('div');
+    wrap.className = 'node';
+    wrap.style.width = width + 'px';
+    wrap.style.transform = `translate(${node.x - width / 2}px, ${node.y}px)`;
+
+    const card = document.createElement('div');
+    card.className = 'tree-card ' + ((unit.members.length === 2 || showPlaceholder) ? 'couple' : 'solo');
+
+    unit.members.forEach((person, idx) => {
+      if (idx === 1) card.appendChild(makeDivider());
+      card.appendChild(renderPersonBlock(person));
+    });
+
+    if (showPlaceholder) {
+      card.appendChild(makeDivider());
+      card.appendChild(renderPlaceholderBlock(unit.members[0].id));
+    }
+
+    wrap.appendChild(card);
+    nodesLayer.appendChild(wrap);
+  }
+
+  function drawSatelliteCard(x, y, unit) {
+    const width = slotWidthOf(unit, false);
+    const wrap = document.createElement('div');
+    wrap.className = 'node';
+    wrap.style.width = width + 'px';
+    wrap.style.transform = `translate(${x - width / 2}px, ${y}px)`;
+    const card = document.createElement('div');
+    card.className = 'tree-card ' + (unit.members.length === 2 ? 'couple' : 'solo');
+    unit.members.forEach((person, idx) => {
+      if (idx === 1) card.appendChild(makeDivider());
+      card.appendChild(renderPersonBlock(person));
+    });
+    wrap.appendChild(card);
+    nodesLayer.appendChild(wrap);
+  }
+
+  let cursorY = 0;
+  const FOREST_GAP = ROW_STEP;
+
+  forestOrder.forEach(idx => {
+    const rootUnit = forestRoots[idx];
+    const forestRoot = d3.hierarchy(rootUnit);
+
+    forestRoot.each(d => {
+      const hasKids = !!(d.children && d.children.length);
+      d.data.layoutWidth = slotWidthOf(d.data, hasKids);
+    });
+
+    const totalWidth = computeExtent(forestRoot);
+    assignX(forestRoot, -totalWidth / 2);
+
+    const forestNodes = forestRoot.descendants();
+
+    forestNodes.forEach(hostNode => {
+      const u = hostNode.data;
+      if (u.members.length !== 2 || u.inlaws.length !== 1 || u.mainMemberIndex === null) return;
+      const inlaw = u.inlaws[0];
+      let desiredMainOnLeft;
+      if (primaryTargets.has(inlaw.parentUnitId)) {
+        const reconnectNode = findAnyNode(inlaw.parentUnitId) || forestNodes.find(n => n.data.unitId === inlaw.parentUnitId);
+        if (!reconnectNode) return;
+        desiredMainOnLeft = !(reconnectNode.x <= hostNode.x);
+      } else {
+        const mainParentNode = forestNodes.find(n => n.data.unitId === u.parentUnitId);
+        if (!mainParentNode) return;
+        desiredMainOnLeft = mainParentNode.x <= hostNode.x;
+      }
+      const mainIsCurrentlyOnLeft = u.mainMemberIndex === 0;
+      if (desiredMainOnLeft !== mainIsCurrentlyOnLeft) {
+        u.members.reverse();
+        u.mainMemberIndex = u.mainMemberIndex === 0 ? 1 : 0;
+        u.inlaws.forEach(il => { il.memberIndex = il.memberIndex === 0 ? 1 : 0; });
+      }
+    });
+
+    const localInlawTargets = new Map();
+    forestNodes.forEach(n => {
+      n.data.inlaws.forEach(il => {
+        localInlawTargets.set(il.parentUnitId, { hostNode: n, memberIndex: il.memberIndex });
+      });
+    });
+
+    const localSatelliteHostDepths = new Set();
+    localInlawTargets.forEach((target, parentUnitId) => {
+      if (primaryTargets.has(parentUnitId)) return;
+      localSatelliteHostDepths.add(target.hostNode.depth);
+    });
+
+    const localMaxDepth = forestNodes.length ? Math.max(...forestNodes.map(n => n.depth)) : 0;
+    const cumulativeExtra = [];
+    let running = 0;
+    for (let d = 0; d <= localMaxDepth; d++) {
+      if (localSatelliteHostDepths.has(d)) running += ROW_STEP;
+      cumulativeExtra[d] = running;
+    }
+    forestNodes.forEach(n => { n.y = cursorY + n.depth * ROW_STEP + cumulativeExtra[n.depth]; });
+
+    const forestLinks = forestRoot.links();
+
+    forestLinks.forEach(l => {
+      const sx = l.source.x, sy = l.source.y + CARD_H;
+      const tx = effectiveTargetX(l);
+      const ty = l.target.y;
+
+      const path = document.createElementNS(svgNS, 'path');
+      path.setAttribute('class', 'branch');
+      const parentIds = l.source.data.members.map(m => m.id);
+      const forIds = l.target.data.members
+        .filter(m => parentIds.includes(m.parent1Id) || parentIds.includes(m.parent2Id))
+        .map(m => m.id);
+      path.dataset.for = forIds.join(',');
+      path.setAttribute('d', linkGen({ source: { x: sx, y: sy }, target: { x: tx, y: ty } }));
+      branchGroup.appendChild(path);
+      addLeaf((sx + tx) / 2, (sy + ty) / 2);
+    });
+
+    forestNodes.forEach(n => drawCard(n));
+    currentNodes.push(...forestNodes);
+
+    const reconnectSegments = [];
+    localInlawTargets.forEach((target, parentUnitId) => {
+      if (!primaryTargets.has(parentUnitId)) return;
+      const targetNode = findAnyNode(parentUnitId);
+      if (!targetNode) return;
+      const xs = memberCenterX(target.hostNode);
+      const hostX = xs[target.memberIndex] ?? xs[0];
+      const hostMember = target.hostNode.data.members[target.memberIndex];
+      const seg = {
+        source: { x: targetNode.x, y: targetNode.y + CARD_H },
+        target: { x: hostX, y: target.hostNode.y }
+      };
+      reconnectSegments.push(seg);
+      const path = document.createElementNS(svgNS, 'path');
+      path.setAttribute('class', 'branch branch-reconnect');
+      path.dataset.for = hostMember ? String(hostMember.id) : '';
+      path.setAttribute('d', linkGen(seg));
+      branchGroup.appendChild(path);
+      addLeaf((seg.source.x + seg.target.x) / 2, (seg.source.y + seg.target.y) / 2);
+    });
+
+    const satelliteItems = [];
+    localInlawTargets.forEach((target, parentUnitId) => {
+      if (primaryTargets.has(parentUnitId)) return;
+      const su = satelliteUnits.find(s => s.unitId === parentUnitId);
+      if (!su) return;
+      const xs = memberCenterX(target.hostNode);
+      const anchorX = xs[target.memberIndex] ?? xs[0];
+      satelliteItems.push({ su, hostNode: target.hostNode, anchorX, memberIndex: target.memberIndex });
+    });
+
+    if (satelliteItems.length) {
+      const byRow = new Map();
+      satelliteItems.forEach(item => {
+        const key = Math.round(item.hostNode.y);
+        if (!byRow.has(key)) byRow.set(key, []);
+        byRow.get(key).push(item);
+      });
+
+      // теперь считаем крест ТОЧНО по кривой Безье, а не по прямой между
+      // концами — раньше именно тут расходилось с реально нарисованной линией
+      function crossingAt(segments, y) {
+        const out = [];
+        segments.forEach(l => {
+          if (l.source.y < y && y < l.target.y) {
+            const cx = bezierXAtY(l.source.x, l.source.y, l.target.x, l.target.y, y);
+            out.push([cx - 70, cx + 70]);
+          }
+        });
+        return out;
+      }
+
+      byRow.forEach((items, hostY) => {
+        const satY = hostY - ROW_STEP;
+        const mainAsSegments = forestLinks.map(l => ({
+          source: { x: l.source.x, y: l.source.y + CARD_H },
+          target: { x: effectiveTargetX(l), y: l.target.y }
+        }));
+        const occupied = [
+          ...crossingAt(mainAsSegments, satY),
+          ...crossingAt(reconnectSegments, satY)
+        ];
+        items.sort((a, b) => a.anchorX - b.anchorX);
+
+        items.forEach(item => {
+          const width = slotWidthOf(item.su, false);
+          const x = resolvePosition(item.anchorX, occupied, width);
+          occupied.push([x - width / 2, x + width / 2]);
+
+          const hostMember = item.hostNode.data.members[item.memberIndex];
+          const path = document.createElementNS(svgNS, 'path');
+          path.setAttribute('class', 'branch');
+          path.dataset.for = hostMember ? String(hostMember.id) : '';
+          path.setAttribute('d', linkGen({
+            source: { x: x, y: satY + CARD_H },
+            target: { x: item.anchorX, y: item.hostNode.y }
+          }));
+          branchGroup.appendChild(path);
+          addLeaf((x + item.anchorX) / 2, (satY + CARD_H + item.hostNode.y) / 2);
+
+          drawSatelliteCard(x, satY, item.su);
+          currentSatellites.push({ x, y: satY });
+        });
+      });
+    }
+
+    const forestBottom = cursorY + localMaxDepth * ROW_STEP + cumulativeExtra[localMaxDepth] + CARD_H;
+    cursorY = forestBottom + FOREST_GAP;
+  });
+
+  updateSelectionVisuals();
+}
+
+// ======================= МОДАЛКА =======================
+let modalMode = null;
+let modalPersonId = null;
+let modalLink = null;
+
+function fillModalFields(p) {
+  document.getElementById('m-fio').value = p ? p.fio : '';
+  document.getElementById('m-birth').value = p ? p.birth : '';
+  document.getElementById('m-death').value = p ? p.death : '';
+  document.getElementById('m-photo').value = p ? p.photo : '';
+  document.getElementById('m-bio').value = p ? p.bio : '';
+}
+
+function peopleOptionsHtml(excludeIds) {
+  return '<option value="">— выбрать существующего —</option>' +
+    people.filter(pp => !excludeIds.includes(pp.id))
+      .map(pp => `<option value="${pp.id}">${pp.fio}${pp.birth ? ' (' + pp.birth + ')' : ''}</option>`)
+      .join('');
+}
+
+function renderRelativeRows(personId) {
+  const p = people.find(pp => pp.id === personId);
+
+  const parentRows = document.getElementById('parent-rows');
+  parentRows.innerHTML = '';
+  ['parent1Id', 'parent2Id'].forEach((field) => {
+    const pid = p[field];
+    if (pid) {
+      const parent = people.find(pp => pp.id === pid);
+      const row = document.createElement('div');
+      row.className = 'relative-row';
+      const label = document.createElement('span');
+      label.textContent = parent ? parent.fio : '—';
+      const btn = document.createElement('button');
+      btn.className = 'btn-outline small';
+      btn.textContent = '✕ Открепить';
+      btn.addEventListener('click', () => {
+        p[field] = null;
+        savePeople(); renderTree(); renderRelativeRows(personId);
+      });
+      row.appendChild(label); row.appendChild(btn);
+      parentRows.appendChild(row);
+    } else {
+      const picker = document.createElement('div');
+      picker.className = 'relative-picker';
+      const select = document.createElement('select');
+      select.innerHTML = peopleOptionsHtml([personId]);
+      const linkBtn = document.createElement('button');
+      linkBtn.className = 'btn-outline small';
+      linkBtn.textContent = 'Привязать';
+      linkBtn.addEventListener('click', () => {
+        if (!select.value) return;
+        p[field] = Number(select.value);
+        savePeople(); renderTree(); renderRelativeRows(personId);
+      });
+      const newBtn = document.createElement('button');
+      newBtn.className = 'btn-outline small';
+      newBtn.textContent = '+ Новый';
+      newBtn.addEventListener('click', () => openAddModal('parent', personId));
+      picker.appendChild(select); picker.appendChild(linkBtn); picker.appendChild(newBtn);
+      parentRows.appendChild(picker);
+    }
+  });
+
+  const spouseRow = document.getElementById('spouse-row');
+  spouseRow.innerHTML = '';
+  if (p.partnerId) {
+    const partner = people.find(pp => pp.id === p.partnerId);
+    const row = document.createElement('div');
+    row.className = 'relative-row';
+    const label = document.createElement('span');
+    label.textContent = partner ? partner.fio : '—';
+    const btn = document.createElement('button');
+    btn.className = 'btn-outline small';
+    btn.textContent = '✕ Открепить';
+    btn.addEventListener('click', () => {
+      if (partner) partner.partnerId = null;
+      p.partnerId = null;
+      savePeople(); renderTree(); renderRelativeRows(personId);
+    });
+    row.appendChild(label); row.appendChild(btn);
+    spouseRow.appendChild(row);
+  } else {
+    const picker = document.createElement('div');
+    picker.className = 'relative-picker';
+    const select = document.createElement('select');
+    select.innerHTML = peopleOptionsHtml([personId]);
+    const linkBtn = document.createElement('button');
+    linkBtn.className = 'btn-outline small';
+    linkBtn.textContent = 'Привязать';
+    linkBtn.addEventListener('click', () => {
+      if (!select.value) return;
+      setPartner(personId, Number(select.value));
+      savePeople(); renderTree(); renderRelativeRows(personId);
+    });
+    const newBtn = document.createElement('button');
+    newBtn.className = 'btn-outline small';
+    newBtn.textContent = '+ Новый';
+    newBtn.addEventListener('click', () => openAddModal('spouse', personId));
+    picker.appendChild(select); picker.appendChild(linkBtn); picker.appendChild(newBtn);
+    spouseRow.appendChild(picker);
+  }
+
+  const childPicker = document.getElementById('child-picker');
+  childPicker.innerHTML = '';
+  const excludeAsChild = [personId, ...people.filter(pp => pp.parent1Id === personId || pp.parent2Id === personId).map(pp => pp.id)];
+  const select = document.createElement('select');
+  select.innerHTML = peopleOptionsHtml(excludeAsChild);
+  const linkBtn = document.createElement('button');
+  linkBtn.className = 'btn-outline small';
+  linkBtn.textContent = 'Привязать как ребёнка';
+  linkBtn.addEventListener('click', () => {
+    if (!select.value) return;
+    const child = people.find(pp => pp.id === Number(select.value));
+    if (!child.parent1Id) child.parent1Id = personId;
+    else child.parent2Id = personId;
+    savePeople(); renderTree(); renderRelativeRows(personId);
+  });
+  childPicker.appendChild(select); childPicker.appendChild(linkBtn);
+}
+
+function openEditModal(personId) {
+  const p = people.find(pp => pp.id === personId);
+  modalMode = 'edit'; modalPersonId = personId; modalLink = null;
+  document.getElementById('modal-title').textContent = p.fio;
+  fillModalFields(p);
+  document.getElementById('modal-delete').style.display = 'inline-block';
+  document.getElementById('modal-relatives').style.display = 'block';
+  renderRelativeRows(personId);
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function openAddModal(type, contextId) {
+  modalMode = 'add'; modalPersonId = null; modalLink = { type, contextId };
+  const titles = { spouse: 'Новый супруг(а)', child: 'Новый ребёнок', parent: 'Новый родитель', root: 'Новый человек' };
+  document.getElementById('modal-title').textContent = titles[type];
+  fillModalFields(null);
+  document.getElementById('modal-delete').style.display = 'none';
+  document.getElementById('modal-relatives').style.display = 'none';
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function closeModal() { document.getElementById('modal-overlay').classList.remove('open'); }
+
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 1600);
+}
+
+function setPartner(personId, newPartnerId) {
+  const person = people.find(p => p.id === personId);
+  if (person.partnerId) {
+    const old = people.find(p => p.id === person.partnerId);
+    if (old) old.partnerId = null;
+  }
+  person.partnerId = newPartnerId;
+  const np = people.find(p => p.id === newPartnerId);
+  if (np) np.partnerId = personId;
+}
+
+document.getElementById('modal-cancel').addEventListener('click', closeModal);
+document.getElementById('modal-close').addEventListener('click', closeModal);
+document.getElementById('modal-overlay').addEventListener('click', (e) => {
+  if (e.target.id === 'modal-overlay') closeModal();
+});
+
+document.getElementById('modal-save').addEventListener('click', () => {
+  const fio = document.getElementById('m-fio').value.trim();
+  if (!fio) { alert('Укажи ФИО'); return; }
+  const fields = {
+    fio,
+    birth: document.getElementById('m-birth').value.trim(),
+    death: document.getElementById('m-death').value.trim(),
+    photo: document.getElementById('m-photo').value.trim(),
+    bio: document.getElementById('m-bio').value.trim()
+  };
+
+  if (modalMode === 'edit') {
+    Object.assign(people.find(p => p.id === modalPersonId), fields);
+    savePeople(); renderTree(); closeModal(); showToast('Сохранено');
+    return;
+  }
+
+  const newId = people.length ? Math.max(...people.map(p => p.id)) + 1 : 1;
+  const newPerson = { id: newId, partnerId: null, parent1Id: null, parent2Id: null, ...fields };
+  people.push(newPerson);
+
+  if (modalLink.type === 'spouse') setPartner(modalLink.contextId, newId);
+  if (modalLink.type === 'child') newPerson.parent1Id = modalLink.contextId;
+  if (modalLink.type === 'parent') {
+    const child = people.find(p => p.id === modalLink.contextId);
+    if (!child.parent1Id) child.parent1Id = newId;
+    else child.parent2Id = newId;
+  }
+
+  savePeople(); renderTree(); closeModal(); showToast('Сохранено');
+});
+
+document.getElementById('modal-delete').addEventListener('click', () => {
+  const p = people.find(pp => pp.id === modalPersonId);
+  if (!confirm(`Удалить «${p.fio}»?`)) return;
+  people.forEach(c => {
+    if (c.parent1Id === p.id) c.parent1Id = null;
+    if (c.parent2Id === p.id) c.parent2Id = null;
+    if (c.partnerId === p.id) c.partnerId = null;
+  });
+  people = people.filter(pp => pp.id !== p.id);
+  savePeople(); renderTree(); closeModal(); showToast('Удалено');
+});
+
+document.getElementById('add-child-btn').addEventListener('click', () => openAddModal('child', modalPersonId));
+document.getElementById('add-root-btn').addEventListener('click', () => openAddModal('root', null));
+
+// ======================= ВЫДЕЛЕНИЕ РАМКОЙ И МАССОВОЕ УДАЛЕНИЕ =======================
+let selectionMode = false;
+let selectedPersonIds = new Set();
+let marqueeStart = null;
+let isDragging = false;
+const DRAG_THRESHOLD = 5;
+
+const stageEl = document.getElementById('stage');
+const marqueeBox = document.getElementById('marquee-box');
+
+function toggleSelectPerson(id) {
+  if (selectedPersonIds.has(id)) selectedPersonIds.delete(id);
+  else selectedPersonIds.add(id);
+  updateSelectionVisuals();
+  updateSelectionActionsBar();
+}
+
+function updateSelectionVisuals() {
+  document.querySelectorAll('.person-block[data-person-id]').forEach(block => {
+    const id = Number(block.dataset.personId);
+    block.classList.toggle('marquee-selected', selectedPersonIds.has(id));
+  });
+}
+
+function updateSelectionActionsBar() {
+  const bar = document.getElementById('selection-bar');
+  bar.classList.toggle('open', selectionMode);
+  document.getElementById('selection-count').textContent = `Выбрано: ${selectedPersonIds.size}`;
+  document.getElementById('selection-delete-btn').disabled = selectedPersonIds.size === 0;
+}
+
+function toggleSelectionMode() {
+  selectionMode = !selectionMode;
+  selectedPersonIds.clear();
+  const btn = document.getElementById('selection-toggle-btn');
+  btn.classList.toggle('active', selectionMode);
+  btn.textContent = selectionMode ? '✕ Выйти из выделения' : '🗑 Выделить и удалить';
+  stageEl.style.cursor = selectionMode ? 'crosshair' : 'grab';
+  updateSelectionVisuals();
+  updateSelectionActionsBar();
+}
+
+function rectsIntersect(a, b) {
+  return !(b.left > a.right || b.right < a.left || b.top > a.bottom || b.bottom < a.top);
+}
+
+function updateMarqueeBox(curX, curY) {
+  const x1 = Math.min(marqueeStart.x, curX), y1 = Math.min(marqueeStart.y, curY);
+  const x2 = Math.max(marqueeStart.x, curX), y2 = Math.max(marqueeStart.y, curY);
+  marqueeBox.style.left = x1 + 'px';
+  marqueeBox.style.top = y1 + 'px';
+  marqueeBox.style.width = (x2 - x1) + 'px';
+  marqueeBox.style.height = (y2 - y1) + 'px';
+  marqueeBox._rect = { left: x1, top: y1, right: x2, bottom: y2 };
+}
+
+function liveMarqueeSelect() {
+  const selRect = marqueeBox._rect;
+  selectedPersonIds.clear();
+  document.querySelectorAll('.person-block[data-person-id]').forEach(block => {
+    const id = Number(block.dataset.personId);
+    if (rectsIntersect(selRect, block.getBoundingClientRect())) selectedPersonIds.add(id);
+  });
+  updateSelectionVisuals();
+  updateSelectionActionsBar();
+}
+
+stageEl.addEventListener('mousedown', (e) => {
+  if (!selectionMode) return;
+  marqueeStart = { x: e.clientX, y: e.clientY };
+  isDragging = false;
+});
+
+window.addEventListener('mousemove', (e) => {
+  if (!selectionMode || !marqueeStart) return;
+  const dx = e.clientX - marqueeStart.x, dy = e.clientY - marqueeStart.y;
+  if (!isDragging && Math.hypot(dx, dy) > DRAG_THRESHOLD) {
+    isDragging = true;
+    marqueeBox.classList.add('active');
+  }
+  if (isDragging) {
+    updateMarqueeBox(e.clientX, e.clientY);
+    liveMarqueeSelect();
+  }
+});
+
+window.addEventListener('mouseup', () => {
+  if (!selectionMode || !marqueeStart) return;
+  marqueeStart = null;
+  marqueeBox.classList.remove('active');
+  isDragging = false;
+  updateSelectionActionsBar();
+});
+
+function deleteSelected() {
+  if (!selectedPersonIds.size) return;
+  if (!confirm(`Удалить выбранных людей (${selectedPersonIds.size})?`)) return;
+  people.forEach(c => {
+    if (selectedPersonIds.has(c.parent1Id)) c.parent1Id = null;
+    if (selectedPersonIds.has(c.parent2Id)) c.parent2Id = null;
+    if (selectedPersonIds.has(c.partnerId)) c.partnerId = null;
+  });
+  people = people.filter(p => !selectedPersonIds.has(p.id));
+  selectedPersonIds.clear();
+  savePeople(); renderTree();
+  updateSelectionActionsBar();
+  showToast('Удалено');
+}
+
+document.getElementById('selection-toggle-btn').addEventListener('click', toggleSelectionMode);
+document.getElementById('selection-exit-btn').addEventListener('click', toggleSelectionMode);
+document.getElementById('selection-clear-btn').addEventListener('click', () => {
+  selectedPersonIds.clear();
+  updateSelectionVisuals();
+  updateSelectionActionsBar();
+});
+document.getElementById('selection-delete-btn').addEventListener('click', deleteSelected);
+
+// ======================= PAN / ZOOM =======================
+const stage = d3.select('#stage');
+const world = document.getElementById('world');
+
+const zoom = d3.zoom()
+  .scaleExtent([0.2, 3])
+  .filter(event => {
+    if (selectionMode) return event.type === 'wheel';
+    return !event.target.closest('.person-block');
+  })
+  .on('zoom', (event) => {
+    const t = event.transform;
+    world.style.transform = `translate(${t.x}px, ${t.y}px) scale(${t.k})`;
+    stage.style('background-position', `${t.x}px ${t.y}px`);
+    stage.style('background-size', `${26 * t.k}px ${26 * t.k}px`);
+  });
+
+stage.call(zoom);
+
+function fitToView() {
+  if (!currentNodes.length) return;
+  const xs = [...currentNodes.map(d => d.x), ...currentSatellites.map(s => s.x)];
+  const ys = [...currentNodes.map(d => d.y), ...currentSatellites.map(s => s.y)];
+  const minX = Math.min(...xs) - COUPLE_SLOT / 2;
+  const maxX = Math.max(...xs) + COUPLE_SLOT / 2;
+  const minY = Math.min(...ys);
+  const maxY = Math.max(...currentNodes.map(d => d.y)) + CARD_H;
+
+  const vw = stage.node().clientWidth;
+  const vh = stage.node().clientHeight;
+  const scale = Math.min(vw / (maxX - minX), vh / (maxY - minY), 1) * 0.9;
+  const tx = (vw - scale * (maxX - minX)) / 2 - scale * minX;
+  const ty = 60 - scale * minY;
+
+  stage.transition().duration(300).call(zoom.transform, d3.zoomIdentity.translate(tx, ty).scale(scale));
+}
+
+document.getElementById('zoom-in').onclick = () => stage.transition().duration(200).call(zoom.scaleBy, 1.3);
+document.getElementById('zoom-out').onclick = () => stage.transition().duration(200).call(zoom.scaleBy, 1 / 1.3);
+document.getElementById('zoom-fit').onclick = fitToView;
+
+// ======================= ЭКСПОРТ / ИМПОРТ (добавляет, не заменяет) =======================
+document.getElementById('export-btn').addEventListener('click', () => {
+  const blob = new Blob([JSON.stringify(people, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'family-tree-data.json';
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+function mergeImportedPeople(imported) {
+  const idMap = new Map();
+  let nextId = people.length ? Math.max(...people.map(p => p.id)) + 1 : 1;
+  imported.forEach(p => { idMap.set(p.id, nextId++); });
+  const remapped = imported.map(p => ({
+    ...p,
+    id: idMap.get(p.id),
+    partnerId: p.partnerId ? (idMap.get(p.partnerId) ?? null) : null,
+    parent1Id: p.parent1Id ? (idMap.get(p.parent1Id) ?? null) : null,
+    parent2Id: p.parent2Id ? (idMap.get(p.parent2Id) ?? null) : null,
+  }));
+  people = people.concat(remapped);
+  savePeople();
+  renderTree();
+  fitToView();
+}
+
+document.getElementById('import-btn').addEventListener('click', () => document.getElementById('import-file').click());
+document.getElementById('import-file').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const parsed = JSON.parse(reader.result);
+      if (!Array.isArray(parsed)) throw new Error('not an array');
+      mergeImportedPeople(parsed);
+      showToast('Семья добавлена');
+    } catch (err) {
+      alert('Не получилось прочитать файл — это должен быть JSON в нужном формате.');
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+});
+
+renderTree();
+fitToView();
+</script>
+</body>
+</html>
