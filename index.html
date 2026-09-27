@@ -243,26 +243,32 @@ if (typeof d3 === 'undefined') {
 }
 
 const STORAGE_KEY = 'familyTreeData';
+const AUTO_LOAD_FILE = 'finalcombined5count.json';
 
-const defaultPeople = [
-  { id: 1, fio: "Иванов Пётр Сергеевич", birth: "1920", death: "1995", partnerId: 2, parent1Id: null, parent2Id: null, photo: "", bio: "Пример биографии. Замени на реальный текст." },
-  { id: 2, fio: "Иванова Анна Дмитриевна", birth: "1922", death: "2001", partnerId: 1, parent1Id: null, parent2Id: null, photo: "", bio: "" },
-  { id: 3, fio: "Иванов Сергей Петрович", birth: "1948", death: "", partnerId: null, parent1Id: 1, parent2Id: 2, photo: "", bio: "" },
-  { id: 4, fio: "Иванова Мария Петровна", birth: "1950", death: "2020", partnerId: null, parent1Id: 1, parent2Id: 2, photo: "", bio: "" },
-  { id: 5, fio: "Иванов Алексей Сергеевич", birth: "1975", death: "", partnerId: null, parent1Id: 3, parent2Id: null, photo: "", bio: "" }
-];
-
-function loadPeople() {
+// сначала localStorage; если пусто — пробуем сам файл finalcombined5count.json
+// рядом с html (сработает только когда страница открыта через сервер,
+// например GitHub Pages, а не двойным кликом с диска); если и это не
+// вышло — просто пустое дерево, без примера-заглушки
+async function loadPeople() {
   const saved = localStorage.getItem(STORAGE_KEY);
   if (saved) {
     try { return JSON.parse(saved); }
-    catch (e) { console.warn('Сохранённые данные повреждены, использую пример'); }
+    catch (e) { console.warn('Сохранённые данные повреждены, начинаю с пустого дерева'); }
   }
-  return JSON.parse(JSON.stringify(defaultPeople));
+  try {
+    const resp = await fetch(AUTO_LOAD_FILE);
+    if (resp.ok) {
+      const data = await resp.json();
+      if (Array.isArray(data)) return data;
+    }
+  } catch (e) {
+    console.warn(`Не удалось автоматически загрузить ${AUTO_LOAD_FILE} — страница, похоже, открыта не через сервер`);
+  }
+  return [];
 }
 function savePeople() { localStorage.setItem(STORAGE_KEY, JSON.stringify(people)); }
 
-let people = loadPeople();
+let people = [];
 
 function getInitials(fio) {
   return fio.split(' ').filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase();
@@ -378,9 +384,6 @@ function effectiveTargetX(l) {
   return l.target.x;
 }
 
-// ТОЧНЫЙ расчёт кривой Безье, которую рисует d3.linkVertical(), вместо
-// приближения "по прямой" — раньше именно расхождение между этим
-// приближением и реальной нарисованной кривой давало пересечения
 function bezierYAtU(u, sy, ty) {
   const midY = (sy + ty) / 2;
   const mu = 1 - u;
@@ -699,8 +702,6 @@ function renderTree() {
         byRow.get(key).push(item);
       });
 
-      // теперь считаем крест ТОЧНО по кривой Безье, а не по прямой между
-      // концами — раньше именно тут расходилось с реально нарисованной линией
       function crossingAt(segments, y) {
         const out = [];
         segments.forEach(l => {
@@ -1174,8 +1175,12 @@ document.getElementById('import-file').addEventListener('change', (e) => {
   e.target.value = '';
 });
 
-renderTree();
-fitToView();
+// ======================= ЗАПУСК =======================
+(async function init() {
+  people = await loadPeople();
+  renderTree();
+  fitToView();
+})();
 </script>
 </body>
 </html>
